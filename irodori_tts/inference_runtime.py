@@ -194,6 +194,8 @@ class SamplingRequest:
     speaker_kv_min_t: float | None = None
     speaker_kv_max_layers: int | None = None
     seed: int | None = None
+    t_schedule_mode: str = "linear"
+    sway_coeff: float = -1.0
     trim_tail: bool = True
     tail_window_size: int = 20
     tail_std_threshold: float = 0.05
@@ -812,6 +814,8 @@ class InferenceRuntime:
                 speaker_kv_scale=speaker_kv_scale,
                 speaker_kv_max_layers=speaker_kv_max_layers,
                 speaker_kv_min_t=speaker_kv_min_t,
+                t_schedule_mode=str(req.t_schedule_mode),
+                sway_coeff=float(req.sway_coeff),
             )
             stage_sec = _measure_end(self.model_device, t0)
             stage_timings.append(("sample_rf", stage_sec))
