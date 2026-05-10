@@ -317,8 +317,8 @@ def main() -> None:
         help=(
             "Comma-separated step indices where the model is evaluated normally. "
             "All other indices are predicted via wavelet-guided extrapolation. "
-            "Use 'auto' (default) to derive a schedule from the paper TTS recipe "
-            "(0,2,4,6,8,14 at 32 NFE) rescaled to --num-steps."
+            "Use 'auto' (default) to derive a schedule from the calibrated "
+            "default (0,1,2,5,10,20 at 40 NFE) rescaled to --num-steps."
         ),
     )
     parser.add_argument(
@@ -341,10 +341,12 @@ def main() -> None:
     parser.add_argument(
         "--waveex-history-size",
         type=int,
-        default=4,
+        default=2,
         help=(
-            "Number of past latent states retained for the wavelet decomposition "
-            "window. Default: 4."
+            "Number of past latent states retained for the extrapolation window. "
+            "Default: 2 (uses direct Taylor on raw latents — empirically best on "
+            "the duration-control checkpoint; the wavelet path with haar + small "
+            "history is unstable). Set >= 4 to engage the wavelet decomposition."
         ),
     )
     parser.add_argument(

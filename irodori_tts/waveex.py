@@ -237,8 +237,10 @@ class WaveExConfig:
     which the model is evaluated normally. All other indices are predicted via
     wavelet-guided extrapolation.
 
-    By default the schedule follows the AAAI-26 paper TTS recipe (32 NFE → 6
-    ODE steps) and is rescaled to the actual num_steps when the sampler calls
+    By default the schedule follows the operating point that won an internal
+    sweep on the duration-control checkpoint (40 NFE → 6 ODE steps at indices
+    [0, 1, 2, 5, 10, 20]; haar + 1st-order direct Taylor on a 2-frame buffer)
+    and is rescaled to the actual num_steps when the sampler calls
     `resolve_ode_step_indices`.
     """
 
@@ -246,7 +248,7 @@ class WaveExConfig:
     ode_step_indices: tuple[int, ...] | None = None
     wavelet: str = "haar"
     taylor_order: int = 1
-    history_size: int = 4
+    history_size: int = 2
     high_freq_mode: str = "extrapolate"
 
     def __post_init__(self) -> None:
@@ -271,10 +273,10 @@ class WaveExConfig:
         """
         Return the set of step indices at which a full ODE evaluation must run.
 
-        If `ode_step_indices` is not set explicitly, derive a schedule from the
-        paper default (32 NFE: ODE at [0, 2, 4, 6, 8, 14]) by linear rescaling
-        to the requested `num_steps`. Step 0 is always kept so the buffer can
-        warm up.
+        If `ode_step_indices` is not set explicitly, derive a schedule from
+        the calibrated default (40 NFE: ODE at [0, 1, 2, 5, 10, 20]) by linear
+        rescaling to the requested `num_steps`. Step 0 is always kept so the
+        buffer can warm up.
         """
         if num_steps <= 0:
             raise ValueError(f"num_steps must be > 0, got {num_steps}.")
@@ -283,9 +285,9 @@ class WaveExConfig:
             indices.add(0)
             return indices
 
-        # Default paper schedule for TTS at 32 NFE.
-        paper_default = (0, 2, 4, 6, 8, 14)
-        paper_total = 32
+        # Calibrated default: 6 ODE steps out of 40 NFE.
+        paper_default = (0, 1, 2, 5, 10, 20)
+        paper_total = 40
         if num_steps == paper_total:
             return set(paper_default)
         scale = num_steps / paper_total
